@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube Smart Scheduler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #FF0000;
+    --red-dim: #cc0000;
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #222222;
+    --text: #f0f0f0;
+    --text-dim: #888;
+    --green: #00c853;
+    --amber: #ffb300;
+    --blue: #2979ff;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--red);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  #auth-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    background: var(--surface);
+  }
+
+  #auth-badge .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #444;
+  }
+
+  #auth-badge.connected .dot { background: var(--green); }
+  #auth-badge.connected { color: var(--text); }
+
+  .btn {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-primary { background: var(--red); color: #fff; }
+  .btn-primary:hover { background: var(--red-dim); transform: translateY(-1px); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: #222; }
+  .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: #444; }
+  .btn-green { background: var(--green); color: #000; }
+  .btn-green:hover { opacity: 0.9; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+  /* ── Layout ── */
+  .container { max-width: 1400px; margin: 0 auto; padding: 32px; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+
+  .tab {
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .tab.active { color: var(--red); border-bottom-color: var(--red); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  /* ── Stats row ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: var(--mono);
+    line-height: 1;
+  }
+
+  .stat-sub { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+
+  /* ── Heatmap ── */
+  .heatmap-wrap {
+    overflow-x: auto;
+  }
+
+  .heatmap {
+    display: grid;
+    grid-template-columns: 80px repeat(24, 1fr);
+    gap: 3px;
+    min-width: 900px;
+  }
+
+  .heatmap-header {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    text-align: center;
+    padding: 4px 0;
+  }
+
+  .heatmap-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    padding-right: 8px;
+    font-weight: 500;
+  }
+
+  .heatmap-cell {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    background: var(--surface2);
+    transition: transform 0.1s;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .heatmap-cell:hover { transform: scale(1.2); z-index: 10; }
+
+  .heatmap-cell .tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .heatmap-cell:hover .tooltip { display: block; }
+
+  /* ── Best times list ── */
+  .best-times-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+  }
+
+  .day-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .day-name {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .time-slot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+
+  .time-slot:last-child { border: none; }
+
+  .time-slot .rank {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    width: 16px;
+  }
+
+  .time-slot.rank-1 .rank { color: #ffd700; }
+  .time-slot.rank-2 .rank { color: #c0c0c0; }
+  .time-slot.rank-3 .rank { color: #cd7f32; }
+
+  .time-slot .time { font-weight: 600; font-size: 13px; }
+
+  .score-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+
+  .score-fill {
+    height: 100%;
+    background: var(--red);
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  /* ── Schedule form ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  input, textarea, select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--red);
+  }
+
+  textarea { resize: vertical; min-height: 80px; }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface2);
+  }
+
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--red);
+    background: rgba(255,0,0,0.03);
+  }
+
+  .upload-zone .icon { font-size: 36px; margin-bottom: 12px; }
+  .upload-zone p { color: var(--text-dim); font-size: 14px; }
+  .upload-zone strong { color: var(--text); }
+
+  /* ── Upload history table ── */
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  tr:hover td { background: var(--surface2); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .badge-green { background: rgba(0,200,83,0.15); color: var(--green); }
+  .badge-red { background: rgba(255,0,0,0.15); color: var(--red); }
+  .badge-amber { background: rgba(255,179,0,0.15); color: var(--amber); }
+  .badge-blue { background: rgba(41,121,255,0.15); color: var(--blue); }
+
+  /* ── Top 5 panel ── */
+  .top5-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .top5-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: border-color 0.15s;
+  }
+
+  .top5-item:hover { border-color: var(--red); }
+  .top5-item:first-child { border-color: rgba(255,215,0,0.4); }
+
+  .top5-rank {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--border);
+    width: 32px;
+  }
+
+  .top5-item:nth-child(1) .top5-rank { color: #ffd700; }
+  .top5-item:nth-child(2) .top5-rank { color: #c0c0c0; }
+  .top5-item:nth-child(3) .top5-rank { color: #cd7f32; }
+
+  .top5-info { flex: 1; }
+  .top5-label { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
+  .top5-meta { font-size: 12px; color: var(--text-dim); font-family: var(--mono); }
+
+  .top5-score {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--red);
+  }
+
+  /* ── Toast ── */
+  #toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 9999;
+  }
+
+  .toast {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 14px;
+    max-width: 360px;
+    animation: slideIn 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error { border-left: 3px solid var(--red); }
+  .toast.info { border-left: 3px solid var(--blue); }
+
+  @keyframes slideIn {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* ── Loading ── */
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    color: var(--text-dim);
+    gap: 12px;
+    font-size: 14px;
+  }
+
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--red);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 60px;
+    color: var(--text-dim);
+  }
+
+  .empty .icon { font-size: 48px; margin-bottom: 16px; }
+  .empty p { font-size: 15px; margin-bottom: 20px; }
+
+  /* ── Notification bell ── */
+  .notif-btn {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 16px;
+  }
+
+  .notif-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    display: none;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  @media (max-width: 900px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .best-times-grid { grid-template-columns: repeat(3, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">▶</div>
+    <div>
+      <div class="logo-text">SmartScheduler</div>
+      <div class="logo-sub">YouTube Analytics</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="notif-btn" onclick="checkNotifications()">
+      🔔
+      <span class="notif-count" id="notif-count">0</span>
+    </button>
+    <div id="auth-badge">
+      <span class="dot"></span>
+      <span id="auth-text">Checking...</span>
+    </div>
+    <a href="/auth/login" class="btn btn-primary btn-sm" id="connect-btn" style="display:none">Connect YouTube</a>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="tab" onclick="switchTab('heatmap')">🌡️ Heatmap</button>
+    <button class="tab" onclick="switchTab('schedule')">📅 Schedule Upload</button>
+    <button class="tab" onclick="switchTab('history')">📋 History</button>
+  </div>
+
+  <!-- ── DASHBOARD TAB ── -->
+  <div id="tab-dashboard" class="tab-panel active">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div>
+        <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">Analytics Overview</h2>
+        <p style="color:var(--text-dim);font-size:14px" id="last-analyzed">Run analysis to see your best posting times</p>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" onclick="loadDashboard()">↻ Refresh</button>
+        <button class="btn btn-primary" onclick="runAnalysis()">⚡ Run Analysis</button>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Best Day</div>
+        <div class="stat-value" id="stat-best-day">—</div>
+        <div class="stat-sub" id="stat-best-day-time">No data</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Best Hour</div>
+        <div class="stat-value" id="stat-best-hour">—</div>
+        <div class="stat-sub">Highest engagement</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Scheduled</div>
+        <div class="stat-value" id="stat-scheduled">0</div>
+        <div class="stat-sub">Pending uploads</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Top Score</div>
+        <div class="stat-value" id="stat-top-score">—</div>
+        <div class="stat-sub">Best slot score</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">🏆 Top 5 Best Posting Times</div>
+        <div id="top5-container">
+          <div class="loading"><div class="spinner"></div> Loading analysis...</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📬 Upcoming Scheduled</div>
+        <div id="upcoming-container">
+          <div class="loading"><div class="spinner"></div> Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HEATMAP TAB ── -->
+  <div id="tab-heatmap" class="tab-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div>
+        <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">Audience Activity Heatmap</h2>
+        <p style="color:var(--text-dim);font-size:14px">When your viewers are most active — by hour and day</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-title">📊 Hour × Day Activity</div>
+      <div class="heatmap-wrap" id="heatmap-container">
+        <div class="loading"><div class="spinner"></div> Loading heatmap...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗓️ Best Hours Per Day</div>
+      <div id="best-times-container">
+        <div class="loading"><div class="spinner"></div> Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCHEDULE TAB ── -->
+  <div id="tab-schedule" class="tab-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div>
+        <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">Schedule Upload</h2>
+        <p style="color:var(--text-dim);font-size:14px">Upload now or auto-schedule at the optimal time</p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">📹 Video Details</div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('video-file').click()">
+            <div class="icon">🎬</div>
+            <p><strong>Drop video here</strong> or click to browse</p>
+            <p style="font-size:12px;margin-top:4px">MP4, MOV, AVI — up to 10GB</p>
+          </div>
+          <input type="file" id="video-file" accept="video/*" style="display:none" onchange="handleFileSelect(this)">
+          <div id="selected-file" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;font-family:var(--mono)"></div>
+
+          <div class="form-grid">
+            <div class="form-group full">
+              <label>Title</label>
+              <input type="text" id="video-title" placeholder="My Awesome Video">
+            </div>
+            <div class="form-group full">
+              <label>Description</label>
+              <textarea id="video-desc" placeholder="Video description..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Tags (comma separated)</label>
+              <input type="text" id="video-tags" placeholder="tag1, tag2, tag3">
+            </div>
+            <div class="form-group">
+              <label>Privacy</label>
+              <select id="video-privacy">
+                <option value="public">Public</option>
+                <option value="unlisted">Unlisted</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card">
+          <div class="card-title">⚡ Auto Schedule</div>
+          <p style="font-size:14px;color:var(--text-dim);margin-bottom:16px;line-height:1.6">
+            Automatically pick the next best posting slot based on your analytics data.
+          </p>
+          <button class="btn btn-green" style="width:100%" onclick="autoSchedule()">
+            🎯 Auto-Schedule (Best Time)
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📅 Manual Schedule</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="form-group">
+              <label>Scheduled Date & Time</label>
+              <input type="datetime-local" id="schedule-time">
+            </div>
+            <button class="btn btn-primary" onclick="scheduleManual()">Schedule Upload</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🚀 Upload Now</div>
+          <p style="font-size:14px;color:var(--text-dim);margin-bottom:16px">
+            Upload immediately without scheduling.
+          </p>
+          <button class="btn btn-secondary" style="width:100%" onclick="uploadNow()">
+            ↑ Upload Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HISTORY TAB ── -->
+  <div id="tab-history" class="tab-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h2 style="font-size:22px;font-weight:700">Upload History</h2>
+      <button class="btn btn-secondary btn-sm" onclick="loadHistory()">↻ Refresh</button>
+    </div>
+
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-title">📅 Scheduled Uploads</div>
+      <div id="scheduled-table-container">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">✅ Upload Records</div>
+      <div id="records-table-container">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<div id="toast-container"></div>
+
+<script>
+// ── State ──────────────────────────────────────
+let currentAnalysis = null;
+
+// ── Tab switching ──────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.tab-panel');
+  const map = { dashboard: 0, heatmap: 1, schedule: 2, history: 3 };
+
+  tabs[map[name]].classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+
+  if (name === 'heatmap') loadHeatmap();
+  if (name === 'history') loadHistory();
+}
+
+// ── Auth check ─────────────────────────────────
+async function checkAuth() {
+  try {
+    const res = await fetch('/auth/status');
+    const data = await res.json();
+    const badge = document.getElementById('auth-badge');
+    const text = document.getElementById('auth-text');
+    const btn = document.getElementById('connect-btn');
+
+    if (data.authenticated) {
+      badge.classList.add('connected');
+      text.textContent = 'Connected';
+      btn.style.display = 'none';
+    } else {
+      text.textContent = 'Not connected';
+      btn.style.display = 'inline-flex';
+    }
+  } catch (e) {}
+}
+
+// ── Run analysis ───────────────────────────────
+async function runAnalysis() {
+  toast('⚡ Running analysis... this may take a moment', 'info');
+  try {
+    const res = await fetch('/api/analyze', { method: 'POST' });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    currentAnalysis = data.results;
+    toast('✅ Analysis complete!', 'success');
+    renderDashboard(data.results);
+    document.getElementById('last-analyzed').textContent =
+      `Last analyzed: ${new Date(data.results.analyzedAt).toLocaleString()}`;
+  } catch (e) {
+    toast('❌ ' + e.message, 'error');
+  }
+}
+
+// ── Load dashboard ─────────────────────────────
+async function loadDashboard() {
+  try {
+    const res = await fetch('/api/analysis/latest');
+    if (res.status === 404) {
+      document.getElementById('top5-container').innerHTML = `
+        <div class="empty">
+          <div class="icon">📊</div>
+          <p>No analysis data yet</p>
+          <button class="btn btn-primary" onclick="runAnalysis()">Run Analysis</button>
+        </div>`;
+      document.getElementById('upcoming-container').innerHTML = '';
+      return;
+    }
+    const data = await res.json();
+    currentAnalysis = data;
+    renderDashboard(data);
+    document.getElementById('last-analyzed').textContent =
+      `Last analyzed: ${new Date(data.analyzedAt).toLocaleString()}`;
+  } catch (e) {}
+
+  // Load scheduled count
+  try {
+    const res = await fetch('/api/uploads/scheduled');
+    const data = await res.json();
+    const pending = data.filter(u => u.status === 'pending');
+    document.getElementById('stat-scheduled').textContent = pending.length;
+    renderUpcoming(pending.slice(0, 5));
+  } catch (e) {}
+}
+
+function renderDashboard(analysis) {
+  // Stats
+  const top = analysis.top5Overall[0];
+  if (top) {
+    document.getElementById('stat-best-day').textContent = top.day.slice(0, 3).toUpperCase();
+    document.getElementById('stat-best-day-time').textContent = top.label;
+    document.getElementById('stat-best-hour').textContent = formatHour(analysis.top5Overall[0].hour);
+    document.getElementById('stat-top-score').textContent = (top.score * 100).toFixed(0) + '%';
+  }
+
+  // Top 5
+  const container = document.getElementById('top5-container');
+  if (!analysis.top5Overall?.length) {
+    container.innerHTML = '<div class="empty"><p>No data available</p></div>';
+    return;
+  }
+
+  const medals = ['🥇','🥈','🥉','4','5'];
+  container.innerHTML = `<div class="top5-list">
+    ${analysis.top5Overall.map((s, i) => `
+      <div class="top5-item">
+        <div class="top5-rank">${medals[i] || i+1}</div>
+        <div class="top5-info">
+          <div class="top5-label">${s.label}</div>
+          <div class="top5-meta">~${s.views.toLocaleString()} views</div>
+        </div>
+        <div class="top5-score">${(s.score * 100).toFixed(0)}%</div>
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+function renderUpcoming(uploads) {
+  const container = document.getElementById('upcoming-container');
+  if (!uploads.length) {
+    container.innerHTML = `<div class="empty"><div class="icon">📭</div><p>No scheduled uploads</p></div>`;
+    return;
+  }
+  container.innerHTML = uploads.map(u => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:3px">${escHtml(u.title)}</div>
+        <div style="font-size:12px;color:var(--text-dim);font-family:var(--mono)">${new Date(u.scheduled_time).toLocaleString()}</div>
+      </div>
+      <span class="badge badge-amber">pending</span>
+    </div>
+  `).join('');
+}
+
+// ── Heatmap ────────────────────────────────────
+async function loadHeatmap() {
+  if (!currentAnalysis) {
+    try {
+      const res = await fetch('/api/analysis/latest');
+      if (res.ok) currentAnalysis = await res.json();
+    } catch (e) {}
+  }
+
+  if (!currentAnalysis) {
+    document.getElementById('heatmap-container').innerHTML =
+      `<div class="empty"><p>Run analysis first</p><button class="btn btn-primary" onclick="runAnalysis()">Run Analysis</button></div>`;
+    return;
+  }
+
+  renderHeatmap(currentAnalysis);
+  renderBestTimes(currentAnalysis);
+}
+
+function renderHeatmap(analysis) {
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const daysFull = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  // Build score matrix
+  const matrix = {};
+  let maxScore = 0;
+
+  days.forEach((d, di) => {
+    const schedule = analysis.weeklySchedule[daysFull[di]];
+    if (!schedule) return;
+
+    // Rebuild from top3 data (simplified)
+    for (let h = 0; h < 24; h++) {
+      const slot = schedule.top3Hours.find(s => s.hour === h);
+      const score = slot ? slot.score : 0;
+      if (!matrix[di]) matrix[di] = {};
+      matrix[di][h] = score;
+      if (score > maxScore) maxScore = score;
+    }
+  });
+
+  const container = document.getElementById('heatmap-container');
+
+  let html = `<div class="heatmap">
+    <div class="heatmap-label"></div>
+    ${Array.from({length:24}, (_,h) => `<div class="heatmap-header">${h}h</div>`).join('')}
+  `;
+
+  days.forEach((day, di) => {
+    html += `<div class="heatmap-label">${day}</div>`;
+    for (let h = 0; h < 24; h++) {
+      const score = (matrix[di] && matrix[di][h]) || 0;
+      const intensity = maxScore > 0 ? score / maxScore : 0;
+      const r = Math.round(255 * intensity);
+      const alpha = 0.15 + intensity * 0.85;
+      const color = intensity > 0
+        ? `rgba(255, ${Math.round(30 * (1-intensity))}, ${Math.round(30*(1-intensity))}, ${alpha})`
+        : 'var(--surface2)';
+
+      html += `<div class="heatmap-cell" style="background:${color}">
+        <div class="tooltip">${daysFull[di]} ${formatHour(h)}<br>Score: ${(score*100).toFixed(1)}%</div>
+      </div>`;
+    }
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderBestTimes(analysis) {
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const container = document.getElementById('best-times-container');
+
+  container.innerHTML = `<div class="best-times-grid">
+    ${days.map(day => {
+      const schedule = analysis.weeklySchedule[day];
+      if (!schedule) return `<div class="day-card"><div class="day-name">${day.slice(0,3)}</div><div style="color:var(--text-dim);font-size:12px">No data</div></div>`;
+
+      return `<div class="day-card">
+        <div class="day-name">${day.slice(0,3)}</div>
+        ${schedule.top3Hours.map((slot, i) => `
+          <div class="time-slot rank-${i+1}">
+            <span class="rank">${i+1}</span>
+            <span class="time">${slot.label}</span>
+            <span style="font-size:11px;color:var(--text-dim);font-family:var(--mono)">${(slot.score*100).toFixed(0)}%</span>
+          </div>
+          <div class="score-bar"><div class="score-fill" style="width:${slot.score*100}%"></div></div>
+        `).join('')}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// ── File upload ────────────────────────────────
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const mb = (file.size / 1024 / 1024).toFixed(1);
+  document.getElementById('selected-file').style.display = 'block';
+  document.getElementById('selected-file').textContent = `📹 ${file.name} — ${mb} MB`;
+  if (!document.getElementById('video-title').value) {
+    document.getElementById('video-title').value = file.name.replace(/\.[^.]+$/, '');
+  }
+}
+
+// Drag and drop
+const zone = document.getElementById('upload-zone');
+['dragover','dragenter'].forEach(e => zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.add('dragover'); }));
+['dragleave','drop'].forEach(e => zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.remove('dragover'); }));
+zone.addEventListener('drop', ev => {
+  const file = ev.dataTransfer.files[0];
+  if (file) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('video-file').files = dt.files;
+    handleFileSelect(document.getElementById('video-file'));
+  }
+});
+
+function buildFormData() {
+  const fd = new FormData();
+  const file = document.getElementById('video-file').files[0];
+  if (file) fd.append('video', file);
+
+  const title = document.getElementById('video-title').value;
+  if (!title) { toast('Please enter a video title', 'error'); return null; }
+  if (!file) { toast('Please select a video file', 'error'); return null; }
+
+  fd.append('title', title);
+  fd.append('description', document.getElementById('video-desc').value);
+  const tags = document.getElementById('video-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+  fd.append('tags', JSON.stringify(tags));
+  fd.append('privacyStatus', document.getElementById('video-privacy').value);
+  return fd;
+}
+
+async function autoSchedule() {
+  const fd = buildFormData();
+  if (!fd) return;
+
+  toast('🎯 Finding optimal slot...', 'info');
+  try {
+    const res = await fetch('/api/uploads/auto-schedule', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    toast(`✅ Scheduled for ${data.slotLabel}!`, 'success');
+    loadDashboard();
+  } catch (e) {
+    toast('❌ ' + e.message, 'error');
+  }
+}
+
+async function scheduleManual() {
+  const fd = buildFormData();
+  if (!fd) return;
+
+  const time = document.getElementById('schedule-time').value;
+  if (!time) { toast('Please pick a date/time', 'error'); return; }
+  fd.append('scheduledTime', new Date(time).toISOString());
+
+  try {
+    const res = await fetch('/api/uploads/schedule', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    toast('✅ Upload scheduled!', 'success');
+    loadDashboard();
+  } catch (e) {
+    toast('❌ ' + e.message, 'error');
+  }
+}
+
+async function uploadNow() {
+  const fd = buildFormData();
+  if (!fd) return;
+
+  toast('📤 Uploading...', 'info');
+  try {
+    const res = await fetch('/api/uploads/now', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    toast(`✅ Uploaded! ${data.videoUrl}`, 'success');
+  } catch (e) {
+    toast('❌ ' + e.message, 'error');
+  }
+}
+
+// ── History ────────────────────────────────────
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/uploads/scheduled');
+    const data = await res.json();
+    renderScheduledTable(data);
+  } catch (e) {}
+
+  try {
+    const res = await fetch('/api/uploads/recent');
+    const data = await res.json();
+    renderRecordsTable(data);
+  } catch (e) {}
+}
+
+function renderScheduledTable(uploads) {
+  const c = document.getElementById('scheduled-table-container');
+  if (!uploads.length) {
+    c.innerHTML = '<div class="empty"><p>No scheduled uploads</p></div>';
+    return;
+  }
+  c.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Title</th><th>Scheduled For</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>${uploads.map(u => `
+      <tr>
+        <td>${escHtml(u.title)}</td>
+        <td>${new Date(u.scheduled_time).toLocaleString()}</td>
+        <td><span class="badge ${statusBadge(u.status)}">${u.status}</span></td>
+        <td>${u.status === 'pending' ? `<button class="btn btn-ghost btn-sm" onclick="deleteScheduled(${u.id})">Delete</button>` : ''}</td>
+      </tr>
+    `).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderRecordsTable(records) {
+  const c = document.getElementById('records-table-container');
+  if (!records.length) {
+    c.innerHTML = '<div class="empty"><p>No upload records yet</p></div>';
+    return;
+  }
+  c.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Title</th><th>Video ID</th><th>Uploaded At</th><th>Status</th></tr></thead>
+    <tbody>${records.map(r => `
+      <tr>
+        <td>${escHtml(r.title)}</td>
+        <td>${r.video_id ? `<a href="https://youtu.be/${r.video_id}" target="_blank" style="color:var(--red)">${r.video_id}</a>` : '—'}</td>
+        <td>${new Date(r.uploaded_at).toLocaleString()}</td>
+        <td><span class="badge ${statusBadge(r.status)}">${r.status}</span></td>
+      </tr>
+    `).join('')}</tbody>
+  </table></div>`;
+}
+
+async function deleteScheduled(id) {
+  await fetch(`/api/uploads/scheduled/${id}`, { method: 'DELETE' });
+  toast('Deleted', 'info');
+  loadHistory();
+}
+
+// ── Notifications ──────────────────────────────
+async function checkNotifications() {
+  const res = await fetch('/api/notifications');
+  const data = await res.json();
+  const countEl = document.getElementById('notif-count');
+  if (data.length) {
+    countEl.style.display = 'flex';
+    countEl.textContent = data.length;
+    data.forEach(n => toast(n.message, n.type === 'error' ? 'error' : n.type === 'success' ? 'success' : 'info'));
+    await fetch('/api/notifications/read', { method: 'POST' });
+    countEl.style.display = 'none';
+  }
+}
+
+// ── Toast ──────────────────────────────────────
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ── Helpers ────────────────────────────────────
+function formatHour(h) {
+  const p = h < 12 ? 'AM' : 'PM';
+  const d = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${d}:00 ${p}`;
+}
+
+function statusBadge(s) {
+  return s === 'completed' || s === 'uploaded' ? 'badge-green' :
+         s === 'pending' ? 'badge-amber' :
+         s === 'failed' ? 'badge-red' : 'badge-blue';
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Init ───────────────────────────────────────
+checkAuth();
+loadDashboard();
+
+// Poll notifications every 30s
+setInterval(async () => {
+  const res = await fetch('/api/notifications').catch(() => null);
+  if (!res) return;
+  const data = await res.json();
+  const el = document.getElementById('notif-count');
+  if (data.length) { el.style.display = 'flex'; el.textContent = data.length; }
+}, 30000);
+</script>
+</body>
+</html>
