@@ -685,6 +685,37 @@
       </div>
     </div>
 
+    <!-- Google Drive Panel -->
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-title">☁️ Google Drive'dan Yükle</div>
+      <p style="font-size:14px;color:var(--text-dim);margin-bottom:16px">Google Drive'daki videoyu link ile yükle veya planla.</p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="form-group">
+          <label>Drive Video Linki</label>
+          <input type="text" id="drive-url" placeholder="https://drive.google.com/file/d/...">
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Başlık</label>
+            <input type="text" id="drive-title" placeholder="Video başlığı">
+          </div>
+          <div class="form-group">
+            <label>Açıklama</label>
+            <input type="text" id="drive-desc" placeholder="Video açıklaması">
+          </div>
+          <div class="form-group">
+            <label>Zamanlama (boş = otomatik)</label>
+            <input type="datetime-local" id="drive-time">
+          </div>
+          <div class="form-group">
+            <label>Etiketler (virgülle)</label>
+            <input type="text" id="drive-tags" placeholder="tag1, tag2">
+          </div>
+        </div>
+        <button class="btn btn-green" onclick="driveSchedule()">☁️ Drive'dan Al ve Planla</button>
+      </div>
+    </div>
+
     <div class="two-col">
       <div class="card">
         <div class="card-title">📹 Video Details</div>
@@ -1085,6 +1116,36 @@ async function scheduleManual() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     toast('✅ Upload scheduled!', 'success');
+    loadDashboard();
+  } catch (e) {
+    toast('❌ ' + e.message, 'error');
+  }
+}
+
+async function driveSchedule() {
+  const driveUrl = document.getElementById('drive-url').value;
+  if (!driveUrl) { toast('Drive linki gir', 'error'); return; }
+
+  const title = document.getElementById('drive-title').value;
+  const description = document.getElementById('drive-desc').value;
+  const scheduledTime = document.getElementById('drive-time').value;
+  const tags = document.getElementById('drive-tags').value
+    .split(',').map(t => t.trim()).filter(Boolean);
+
+  toast('☁️ Drive\'dan indiriliyor...', 'info');
+
+  try {
+    const res = await fetch('/api/uploads/drive-schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        driveUrl, title, description, tags,
+        scheduledTime: scheduledTime ? new Date(scheduledTime).toISOString() : null,
+      }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    toast('✅ Planlandı: ' + (data.slotLabel || scheduledTime), 'success');
     loadDashboard();
   } catch (e) {
     toast('❌ ' + e.message, 'error');
